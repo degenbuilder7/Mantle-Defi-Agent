@@ -60,15 +60,31 @@ We integrated our platform with major DeFi protocols on the Mantle blockchain, s
 - **Ondo Finance**: Users can manage their assets and participate in structured finance products.
 - **Puff Penthouse**: Users can explore exclusive DeFi opportunities and community-driven projects.
 
-
-### 2. Wallet Integration:
-- We integrated MantleLink, a widely used wallet for the Mantle network, to manage users' accounts, sign transactions, and enable interaction with Mantle-based tokens (TRX, TRC-20 tokens like USDD, and more).
-- This integration allows users to easily connect their MantleLink wallet, perform DeFi actions, and deploy smart contracts directly from our platform.
-
-### 3. Smart Contract Compilation and Deployment:
+### 2. Smart Contract Compilation and Deployment:
 While DeFi actions do not require new contract deployments, our platform also supports AI-powered smart contract generation where users can:
 - Generate contracts using natural language prompts (e.g., NFT contracts, token contracts, ownership contracts).
 - Compile and deploy contracts directly from the app, using MantleIDE for testing and deployment.
 - Edit contracts within the app and open them in MantleIDE for further changes, providing users with a smooth development experience on the Mantle blockchain.
+
+### 3. Integration with Hemera Indexer:
+
+
+•To provide users with comprehensive account-based data on Mantle, Mantle Defi Agent utilizes the Hemera Indexer. Hemera is a decentralized, account-centric programmable indexing network designed to unlock the full potential of data networks within web3. 
+
+
+•By running a custom Hemera Indexer, the platform efficiently indexes blockchain data, enabling real-time access to user account information, transaction histories, and smart contract interactions. This integration ensures that users have accurate and up-to-date information, enhancing transparency and trust within the platform.
+
+
+•Benefits of Hemera Integration:
+
+
+•- Enhanced Data Accessibility: Hemera's account-centric indexing provides organized and efficient access to blockchain data, facilitating the development of user-friendly applications. 
+
+
+•- Real-Time Updates:: The custom indexer ensures that users receive real-time updates on their account activities, enabling informed decision-making in DeFi operations.
+
+
+•- Improved User Experience: Access to comprehensive account data allows the platform to offer personalized services, enhancing overall user satisfaction.
+
 
 ### Links to APIs, Tools, and Protocols:
