@@ -86,7 +86,7 @@ export default function ContractGenerator() {
     // Encode the contract content
     const encodedContract = toBase64(generatedContract);
 
-    const tronIDEUrl = `https://remix.io/#code=${encodedContract}`;
+    const tronIDEUrl = `https://remix.ethereum.org/#code=${encodedContract}`;
     
     window.open(tronIDEUrl, '_blank');
   }
