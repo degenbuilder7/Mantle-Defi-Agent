@@ -2,82 +2,77 @@ import React, { useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import Openai, { OpenAI } from 'openai'
 import { FaDownload, FaCode, FaPlay, FaRocket } from 'react-icons/fa'
 import { saveAs } from 'file-saver'
-import { Buffer } from 'buffer'
 import { toBase64 } from 'openai/core'
 import axios from 'axios'
 import { useActiveAccount } from 'thirdweb/react'
+import { ethers } from 'ethers'
 
-// Initialize OpenAI API
-const openai = new Openai({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || '', 
-  dangerouslyAllowBrowser: true// Use an environment variable for your API key
-});
+// Add type definitions
+interface BrianResponse {
+  contract: string;
+  contractName: string;
+  version: string;
+  abi: any;
+  bytecode: string;
+  standardJsonInput: string;
+  result: any
+}
 
 export default function ContractGenerator() {
   const [contractType, setContractType] = useState("Smart Contract")
   const [promptText, setPromptText] = useState("")
   const [generatedContract, setGeneratedContract] = useState("")
-  const [loading, setLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [compiledData, setCompiledData] = useState<{abi?: string, bytecode?: string}>({})
+  const [deploymentLoading, setDeploymentLoading] = useState(false)
+  const [deploymentError, setDeploymentError] = useState<string | null>(null)
+  const [deployedAddress, setDeployedAddress] = useState<string | null>(null)
 
   const activeAccount = useActiveAccount();
   const address = activeAccount?.address;
 
-  const contractContent = `// SPDX-License-Identifier: GPL-3.0
+  const provider = new ethers.JsonRpcProvider("https://rpc.testnet.mantle.xyz");
+  const wallet = new ethers.Wallet(`${process.env.NEXT_PUBLIC_KEY}`, provider);
 
-pragma solidity >=0.7.0 <0.9.0;
 
-contract Owner {
-
-    address private owner;
-    
-    event OwnerSet(address indexed oldOwner, address indexed newOwner);
-    
-    modifier isOwner() {
-        require(msg.sender == owner, "Caller is not owner");
-        _;
-    }
-
-    constructor() {
-        owner = msg.sender;
-        emit OwnerSet(address(0), owner);
-    }
-
-    function changeOwner(address newOwner) public isOwner {
-        emit OwnerSet(owner, newOwner);
-        owner = newOwner;
-    }
-
-    function getOwner() external view returns (address) {
-        return owner;
-    }
-}`;
-
+  
   const handleGenerateContract = async () => {
     setLoading(true)
     try {
       const prompt = `Generate a smart contract of type ${contractType} based on the following prompt: ${promptText}`
 
-      // Make a request to OpenAI's API
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // You can use a different model like GPT-4 if available
-        messages : [
-          {
-            role: "user",
-            content: prompt
+      const response = await axios.post<BrianResponse>(
+        'https://api.brianknows.org/api/v0/agent/smart-contract',
+        {
+          prompt,
+          compile: true
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Brian-Api-Key': process.env.NEXT_PUBLIC_BRIAN_API_KEY
           }
-        ],
-        max_tokens: 1500, // Adjust the token limit based on contract complexity
-        temperature: 0.7, // Control the creativity level
+        }
+      );
+
+      // Extract code from markdown code block
+      const codeMatch = response.data.result.contract.match(/```solidity\n([\s\S]*?)```/);
+      if (codeMatch && codeMatch[1]) {
+        setGeneratedContract(codeMatch[1].trim());
+      }
+
+      // Store ABI and bytecode
+      setCompiledData({
+        abi: response.data.abi,
+        bytecode: response.data.bytecode
       });
 
-      setGeneratedContract(response.choices[0].message.content.trim());
     } catch (error) {
       console.error("Error generating contract:", error);
-      setGeneratedContract(contractContent);
+      setGeneratedContract("// Error generating contract");
     }
     setLoading(false)
   }
@@ -87,11 +82,11 @@ contract Owner {
     saveAs(blob, 'generated_contract.sol')
   }
 
-  const openInTronIDE = () => {
+  const openInRemixIDE = () => {
     // Encode the contract content
     const encodedContract = toBase64(generatedContract);
 
-    const tronIDEUrl = `https://tronide.io/#code=${encodedContract}`;
+    const tronIDEUrl = `https://remix.io/#code=${encodedContract}`;
     
     window.open(tronIDEUrl, '_blank');
   }
@@ -104,43 +99,37 @@ contract Owner {
     setIsEditing(false);
   };
 
-  const compileContract = async () => {
-    try {
-      const response = await axios.post('/api/compile-contract', {
-        contractSource: generatedContract
-      })
-      console.log('Compilation successful:', response.data)
-
-      deployContract(response.data.abi, response.data.bytecode, response.data.contractName)
-    } catch (error) {
-      console.error('Compilation failed:', error.response?.data || error.message)
+  const deployContract = async () => {
+    if (!compiledData.abi || !compiledData.bytecode) {
+      setDeploymentError('No compiled data available');
+      return;
     }
-  }
-
-  const deployContract = async ( abi : string, bytecode: string , name : string) => {
+    
+    setDeploymentLoading(true);
+    setDeploymentError(null);
     
     try {
-        const url = 'https://api.shasta.trongrid.io/wallet/deploycontract';
+      const factory = new ethers.ContractFactory(
+        compiledData.abi, 
+        compiledData.bytecode, 
+        wallet
+      );
 
-        const res = await axios.post(url, {
-            abi,
-            bytecode,
-            owner_address: address || "TJmmqjb1DK9TTZbQXzRQ2AuA94z4gKAPFh",
-            name,
-            visible: true
-        });
+      const contract = await factory.deploy();
+      const deployedContract = await contract.deploymentTransaction()?.wait();
+      
+      if (!deployedContract?.contractAddress) {
+        throw new Error('Failed to get deployed contract address');
+      }
 
-
-        const response = await res.data;
-        console.log("Response: ", response);
-
-        // sign and send the transaction
-
+      setDeployedAddress(deployedContract.contractAddress);
+      console.log("Contract deployed at:", deployedContract.contractAddress);
     } catch (error) {
-        console.log("Error", error);
-
+      console.error("Error deploying contract:", error);
+      setDeploymentError(error instanceof Error ? error.message : 'Unknown error occurred');
+    } finally {
+      setDeploymentLoading(false);
     }
-
   }
 
   return (
@@ -210,7 +199,7 @@ contract Owner {
                   <Button onClick={downloadContract} className="bg-blue-600 hover:bg-blue-700">
                     <FaDownload className="mr-2" /> Download
                   </Button>
-                  <Button onClick={openInTronIDE} className="bg-green-600 hover:bg-green-700">
+                  <Button onClick={openInRemixIDE} className="bg-green-600 hover:bg-green-700">
                     <FaCode className="mr-2" /> Open in Mantle IDE
                   </Button>
                   {isEditing ? (
@@ -222,10 +211,23 @@ contract Owner {
                       <FaPlay className="mr-2" /> Edit Contract
                     </Button>
                   )}
-                  <Button onClick={compileContract} className="bg-red-600 hover:bg-red-700">
-                    <FaRocket className="mr-2" /> Deploy
+                  <Button 
+                    onClick={deployContract} 
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={!compiledData.abi || !compiledData.bytecode || deploymentLoading}
+                  >
+                    <FaRocket className="mr-2" />
+                    {deploymentLoading ? "Deploying..." : "Deploy"}
                   </Button>
                 </div>
+                {deploymentError && (
+                  <p className="text-red-500 mt-2">{deploymentError}</p>
+                )}
+                {deployedAddress && (
+                  <p className="text-green-500 mt-2">
+                    Contract deployed at: {deployedAddress}
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-2xl font-bold">Lets build something cool 😎</p>

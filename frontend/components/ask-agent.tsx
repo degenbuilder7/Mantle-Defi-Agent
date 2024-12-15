@@ -49,7 +49,7 @@ export default function AskAgent() {
           <div key={index} className={`mb-4 flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <Card className={`max-w-[80%] ${message.role === 'user' ? 'bg-blue-900' : 'bg-gray-800'}`}>
               <CardContent className="p-4">
-                <p className="font-semibold mb-2">{message.role === 'user' ? 'You' : '🤖 TronDefi Agent'}</p>
+                <p className="font-semibold mb-2">{message.role === 'user' ? 'You' : '🤖  Agent'}</p>
                 {message.role === 'assistant' ? (
                   <ReactMarkdown 
                     className="prose prose-invert max-w-none"
@@ -77,7 +77,7 @@ export default function AskAgent() {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask TronDefi Agent 🤖 a question..."
+            placeholder="Ask Agent 🤖 a question..."
             className="flex-grow bg-gray-800 text-white border-gray-700"
           />
           <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
