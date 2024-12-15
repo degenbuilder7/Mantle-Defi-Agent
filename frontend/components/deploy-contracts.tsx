@@ -8,7 +8,7 @@ import { saveAs } from 'file-saver'
 import { Buffer } from 'buffer'
 import { toBase64 } from 'openai/core'
 import axios from 'axios'
-import { useWallet } from '@tronweb3/tronwallet-adapter-react-hooks'
+import { useActiveAccount } from 'thirdweb/react'
 
 // Initialize OpenAI API
 const openai = new Openai({
@@ -22,7 +22,9 @@ export default function ContractGenerator() {
   const [generatedContract, setGeneratedContract] = useState("")
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const { signMessage , signTransaction , address} = useWallet();
+
+  const activeAccount = useActiveAccount();
+  const address = activeAccount?.address;
 
   const contractContent = `// SPDX-License-Identifier: GPL-3.0
 
@@ -132,13 +134,7 @@ contract Owner {
         const response = await res.data;
         console.log("Response: ", response);
 
-        const signedTransaction = await signTransaction(response);
-        console.log("Signed txn", signedTransaction);
-
-        // const signedTransaction = await tronWeb.trx.sign(transaction);
-        const sendTransaction = await tronWeb.trx.sendRawTransaction(signedTransaction);
-
-        console.log("sendTransaction txn", sendTransaction);
+        // sign and send the transaction
 
     } catch (error) {
         console.log("Error", error);

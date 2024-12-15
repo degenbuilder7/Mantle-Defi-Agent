@@ -5,11 +5,10 @@ import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { actions } from 'orchai-combinator-tron-sdk-v1';
-import { tronWeb } from '../app/api/tronweb';
+
 import JustlendABI from '../config/JustlendABI.json';
-import { useWallet } from '@tronweb3/tronwallet-adapter-react-hooks';
 import { SunSwapABI } from '../config/SunSwapABI';
+import { useActiveAccount } from 'thirdweb/react';
 
 interface Command {
   id: number;
@@ -65,7 +64,9 @@ export default function SendTransaction() {
   const [filter, setFilter] = useState('All')
   const [queryCommands, setQueryCommands] = useState(initialQueryCommands)
   const [selectedCommand, setSelectedCommand] = useState<Command | null>(null)
-  const { signMessage, signTransaction, address } = useWallet();
+  
+  const activeAccount = useActiveAccount();
+  const address = activeAccount?.address;
 
   const filteredCommands = filter === 'All'
     ? queryCommands
