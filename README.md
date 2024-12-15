@@ -1,4 +1,4 @@
-# Mantle Defi Agent
+# Mantle Defi Agent : An agent that executes transactions for you based on your intents
 
 ### Functionality and Fundamental Goal of the Project:
 
