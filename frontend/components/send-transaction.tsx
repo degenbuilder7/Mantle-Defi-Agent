@@ -29,6 +29,26 @@ const MOE_CONTRACTS = {
   MOE_TOKEN: "0x4515A45337F461A11Ff0FE8aBF3c606AE5dC00c9"
 } as const;
 
+// Add Agni contract addresses
+const AGNI_CONTRACTS = {
+  MAINNET: {
+    AgniFactory: '0x25780dc8Fc3cfBD75F33bFDAB65e969b603b2035',
+    SwapRouter: '0x319B69888b0d11cEC22caA5034e25FfFBDc88421',
+    WMNT: '0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8',
+    USDT: '0x201EBa5cC46D216Ce6dC03F6a759e8E766e956aE',
+    USDC: '0x09bc4e0d864854c6afb6eb9a9cdf58ac190d0df9',
+    NonfungiblePositionManager: '0x218bf598D1453383e2F4AA7b14fFB9BfB102D637'
+  },
+  TESTNET: {
+    AgniFactory: '0x503Ca2ad7C9C70F4157d14CF94D3ef5Fa96D7032',
+    SwapRouter: '0xe2DB835566F8677d6889ffFC4F3304e8Df5Fc1df',
+    WMNT: '0xEa12Be2389c2254bAaD383c6eD1fa1e15202b52A',
+    USDT: '0x3e163F861826C3f7878bD8fa8117A179d80731Ab',
+    USDC: '0x82a2eb46a64e4908bbc403854bc8aa699bf058e9',
+    NonfungiblePositionManager: '0xb04a19EF7853c52EDe6FBb28F8FfBecb73329eD7'
+  }
+} as const;
+
 interface Command {
   id: number;
   type: string;
@@ -62,10 +82,34 @@ const initialQueryCommands: Command[] = [
     text: "Remove {amount} MOE-MNT LP",
     tokenIn: MOE_CONTRACTS.MOE_TOKEN,
     tokenOut: "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8"
+  },
+  {
+    id: 4,
+    type: "agniSwap",
+    amount: "1",
+    text: "Swap {amount} MNT for USDT on Agni",
+    tokenIn: AGNI_CONTRACTS.MAINNET.WMNT,
+    tokenOut: AGNI_CONTRACTS.MAINNET.USDT
+  },
+  {
+    id: 5,
+    type: "agniAddLiquidity",
+    amount: "1",
+    text: "Add {amount} MNT-USDT LP on Agni",
+    tokenIn: AGNI_CONTRACTS.MAINNET.WMNT,
+    tokenOut: AGNI_CONTRACTS.MAINNET.USDT
+  },
+  {
+    id: 6,
+    type: "agniRemoveLiquidity",
+    amount: "1", 
+    text: "Remove {amount} MNT-USDT LP on Agni",
+    tokenIn: AGNI_CONTRACTS.MAINNET.WMNT,
+    tokenOut: AGNI_CONTRACTS.MAINNET.USDT
   }
 ]
 
-const filterOptions = ['All', 'MOE']
+const filterOptions = ['All', 'MOE', 'Agni', ]
 
 const CommandItem: React.FC<{
   command: Command;
@@ -192,6 +236,76 @@ const handleMoeRemoveLiquidity = async (command: Command, activeAccount: any) =>
   }
 };
 
+// Add handler functions for Agni operations
+const handleAgniSwap = async (command: Command, activeAccount: any) => {
+  if (!activeAccount || !command.tokenIn || !command.tokenOut) return;
+
+  try {
+    const router = new ethers.Contract(
+      AGNI_CONTRACTS.MAINNET.SwapRouter,
+      [
+        "function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) external payable returns (uint256 amountOut)"
+      ],
+      activeAccount
+    );
+
+    const amountIn = ethers.parseEther(command.amount);
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
+
+    const params = {
+      tokenIn: command.tokenIn,
+      tokenOut: command.tokenOut,
+      fee: 3000, // 0.3%
+      recipient: activeAccount.address,
+      deadline,
+      amountIn,
+      amountOutMinimum: 0, // Be careful with this in production!
+      sqrtPriceLimitX96: 0
+    };
+
+    const tx = await router.exactInputSingle(params);
+    console.log("Swap transaction:", tx);
+  } catch (error) {
+    console.error("Error in Agni swap:", error);
+  }
+};
+
+const handleAgniAddLiquidity = async (command: Command, activeAccount: any) => {
+  if (!activeAccount || !command.tokenIn || !command.tokenOut) return;
+
+  try {
+    const positionManager = new ethers.Contract(
+      AGNI_CONTRACTS.MAINNET.NonfungiblePositionManager,
+      [
+        "function mint((address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address recipient, uint256 deadline)) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)"
+      ],
+      activeAccount
+    );
+
+    const amount = ethers.parseEther(command.amount);
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+    const params = {
+      token0: command.tokenIn,
+      token1: command.tokenOut,
+      fee: 3000,
+      tickLower: -887220,  // Example ticks - calculate these based on price range
+      tickUpper: 887220,
+      amount0Desired: amount,
+      amount1Desired: amount,
+      amount0Min: 0,
+      amount1Min: 0,
+      recipient: activeAccount.address,
+      deadline
+    };
+
+    const tx = await positionManager.mint(params);
+    console.log("Add liquidity transaction:", tx);
+  } catch (error) {
+    console.error("Error in Agni add liquidity:", error);
+  }
+};
+
 export default function SendTransaction() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filter, setFilter] = useState('All')
@@ -217,7 +331,11 @@ export default function SendTransaction() {
   const executeCommand = useCallback((command: Command) => {
     console.log(`Executing command: ${command.text.replace('{amount}', command.amount)}`);
 
-    if (command.type === 'moeSwap') {
+    if (command.type === 'agniSwap') {
+      handleAgniSwap(command, activeAccount);
+    } else if (command.type === 'agniAddLiquidity') {
+      handleAgniAddLiquidity(command, activeAccount);
+    } else if (command.type === 'moeSwap') {
       handleMoeSwap(command, activeAccount);
     } else if (command.type === 'moeAddLiquidity') {
       handleMoeAddLiquidity(command, activeAccount);
