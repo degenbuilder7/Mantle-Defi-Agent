@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useCallback } from 'react'
 import { X } from 'lucide-react'
+import { ethers } from 'ethers'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,24 +11,61 @@ import JustlendABI from '../config/JustlendABI.json';
 import { SunSwapABI } from '../config/SunSwapABI';
 import { useActiveAccount } from 'thirdweb/react';
 
+// Add type definition for window.tron
+declare global {
+  interface Window {
+    tron?: {
+      tronWeb: {
+        contract: (abi: any, address: string) => Promise<any>;
+      };
+    };
+  }
+}
+
+// Add Merchant Moe contract addresses
+const MOE_CONTRACTS = {
+  ROUTER: "0xeaEE7EE68874218c3558b40063c42B82D3E7232a",
+  FACTORY: "0x5bef015ca9424a7c07b68490616a4c1f094bedec",
+  MOE_TOKEN: "0x4515A45337F461A11Ff0FE8aBF3c606AE5dC00c9"
+} as const;
+
 interface Command {
   id: number;
   type: string;
   amount: string;
   text: string;
+  tokenIn?: string;
+  tokenOut?: string;
 }
 
 const initialQueryCommands: Command[] = [
-  { id: 1, type: "transfer", amount: "10", text: "Transfer {amount} stUSDT to HTX DAO" },
-  { id: 2, type: "lend", amount: "100", text: "Lend {amount} stUSDT on Justlend" },
-  { id: 3, type: "swap", amount: "50", text: "Swap {amount} sTRX to USDD on Sunswap" },
-  { id: 4, type: "stake", amount: "200", text: "Stake {amount} sTRX on Energy Rental" },
-  { id: 5, type: "send", amount: "500", text: "Send {amount} USDD to Sun Dapp Chain" },
-  { id: 6, type: "transfer", amount: "1", text: "Transfer {amount} ApeNFT to BitTorrent File System" },
-  { id: 7, type: "swap", amount: "100", text: "Swap {amount} USDD to BTT on Sunswap" }
+  { 
+    id: 1, 
+    type: "moeSwap", 
+    amount: "1", 
+    text: "Swap {amount} MOE for MNT",
+    tokenIn: MOE_CONTRACTS.MOE_TOKEN,
+    tokenOut: "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8" // MNT token
+  },
+  { 
+    id: 2, 
+    type: "moeAddLiquidity", 
+    amount: "1", 
+    text: "Add {amount} MOE-MNT LP",
+    tokenIn: MOE_CONTRACTS.MOE_TOKEN,
+    tokenOut: "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8"
+  },
+  { 
+    id: 3, 
+    type: "moeRemoveLiquidity", 
+    amount: "1", 
+    text: "Remove {amount} MOE-MNT LP",
+    tokenIn: MOE_CONTRACTS.MOE_TOKEN,
+    tokenOut: "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8"
+  }
 ]
 
-const filterOptions = ['All', 'HTX DAO', 'stUSDT', 'Justlend', 'sTRX', 'Sunswap', 'Energy Rental', 'Sun Dapp', 'ApeNFT', 'BitTorrent File']
+const filterOptions = ['All', 'MOE']
 
 const CommandItem: React.FC<{
   command: Command;
@@ -59,6 +97,101 @@ const CommandItem: React.FC<{
   )
 }
 
+// Add handler functions for Merchant Moe operations
+const handleMoeSwap = async (command: Command, activeAccount: any) => {
+  if (!activeAccount || !command.tokenIn || !command.tokenOut) return;
+
+  try {
+    const router = new ethers.Contract(
+      MOE_CONTRACTS.ROUTER,
+      [
+        "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) external returns (uint256[] memory amounts)"
+      ],
+      activeAccount
+    );
+
+    const amountIn = ethers.parseEther(command.amount);
+    const path = [command.tokenIn, command.tokenOut];
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
+
+    const tx = await router.swapExactTokensForTokens(
+      amountIn,
+      0, // amountOutMin - be careful with this in production!
+      path,
+      activeAccount.address,
+      deadline
+    );
+
+    console.log("Swap transaction:", tx);
+  } catch (error) {
+    console.error("Error in Moe swap:", error);
+  }
+};
+
+const handleMoeAddLiquidity = async (command: Command, activeAccount: any) => {
+  if (!activeAccount || !command.tokenIn || !command.tokenOut) return;
+
+  try {
+    const router = new ethers.Contract(
+      MOE_CONTRACTS.ROUTER,
+      [
+        "function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256 amountA, uint256 amountB, uint256 liquidity)"
+      ],
+      activeAccount
+    );
+
+    const amountA = ethers.parseEther(command.amount);
+    const amountB = ethers.parseEther(command.amount);
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+    const tx = await router.addLiquidity(
+      command.tokenIn,
+      command.tokenOut,
+      amountA,
+      amountB,
+      0, // amountAMin - be careful with this in production!
+      0, // amountBMin - be careful with this in production!
+      activeAccount.address,
+      deadline
+    );
+
+    console.log("Add liquidity transaction:", tx);
+  } catch (error) {
+    console.error("Error in Moe add liquidity:", error);
+  }
+};
+
+const handleMoeRemoveLiquidity = async (command: Command, activeAccount: any) => {
+  if (!activeAccount || !command.tokenIn || !command.tokenOut) return;
+
+  try {
+    const router = new ethers.Contract(
+      MOE_CONTRACTS.ROUTER,
+      [
+        "function removeLiquidity(address tokenA, address tokenB, uint256 liquidity, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256 amountA, uint256 amountB)"
+      ],
+      activeAccount
+    );
+
+    const liquidity = ethers.parseEther(command.amount);
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+    const tx = await router.removeLiquidity(
+      command.tokenIn,
+      command.tokenOut,
+      liquidity,
+      0, // amountAMin - be careful with this in production!
+      0, // amountBMin - be careful with this in production!
+      activeAccount.address,
+      deadline
+    );
+
+    console.log("Remove liquidity transaction:", tx);
+  } catch (error) {
+    console.error("Error in Moe remove liquidity:", error);
+  }
+};
+
 export default function SendTransaction() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filter, setFilter] = useState('All')
@@ -80,40 +213,50 @@ export default function SendTransaction() {
     )
   }, [])
 
+  // Update executeCommand to pass activeAccount
   const executeCommand = useCallback((command: Command) => {
-    console.log(`Executing command: ${command.text.replace('{amount}', command.amount)}`)
+    console.log(`Executing command: ${command.text.replace('{amount}', command.amount)}`);
 
-    if (command.type === 'swap' && command.text.toLowerCase().includes('sunswap')) {
+    if (command.type === 'moeSwap') {
+      handleMoeSwap(command, activeAccount);
+    } else if (command.type === 'moeAddLiquidity') {
+      handleMoeAddLiquidity(command, activeAccount);
+    } else if (command.type === 'moeRemoveLiquidity') {
+      handleMoeRemoveLiquidity(command, activeAccount);
+    } else if (command.type === 'swap' && command.text.toLowerCase().includes('sunswap')) {
       handleSunSwap(command);
     } else {
       handleFunction({ amount: command.amount });
     }
-  }, [])
+  }, [activeAccount]);
 
+  // Update handleFunction with proper typing
   const handleFunction = async ({
     amount
-  }: { amount: string }) => {
+  }: { 
+    amount: string 
+  }) => {
     const tron = window.tron;
     try {
       if (tron) {
         const tronWeb = tron.tronWeb;
-
-        const justlendContractAddress = "TE2RzoSV3wFK99w6J9UnnZ4vLfXYoxvRwP";//contract address justlend
+        const justlendContractAddress = "TE2RzoSV3wFK99w6J9UnnZ4vLfXYoxvRwP";
         let contract = await tronWeb.contract(JustlendABI, justlendContractAddress);
 
         console.log("Contract", contract);
 
         let result = await contract.mint().send({
           callValue: amount,
-        }).then(output => { console.log('- Output:', output, '\n'); });
+        }).then((output: unknown) => { 
+          console.log('- Output:', output, '\n');
+          return output;
+        });
         console.log('result: ', result);
       }
     } catch (error) {
       console.log("Error in sending txn", error);
-
     }
-
-  }
+  };
 
   const sunswapQuote = async ({
     fromToken,

@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input'
 import SendTransaction from '@/components/send-transaction';
 import DeployContracts from '@/components/deploy-contracts';
 import  AskAgent  from '@/components/ask-agent';
+import Yield from '@/components/yield';
 
 const Sidebar = ({ activeItem, setActiveItem } : any) => {
   const menuItems = [
     { icon: <Package2 className="w-4 h-4" />, label: 'Ask Agent', key: 'ask' },
     { icon: <Send className="w-4 h-4" />, label: 'Send Transaction', key: 'send' },
+    { icon: <Radio className="w-4 h-4" />, label: 'Get Yield', key: 'get-yield' },
     { icon: <FileCode className="w-4 h-4" />, label: 'Deploy Contract', key: 'deploy' },
     { icon: <Image className="w-4 h-4" />, label: 'Image Generator', key: 'image' },
     { icon: <Code2 className="w-4 h-4" />, label: 'Discover Contract', key: 'discover' },
@@ -51,6 +53,8 @@ export default function Component() {
         return <AskAgent />
       case 'send':
         return <SendTransaction />
+      case 'get-yield':
+        return <Yield />
       case 'deploy':
         return <DeployContracts />
       case 'image':
