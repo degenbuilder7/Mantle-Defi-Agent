@@ -2,7 +2,9 @@
 
 ### Functionality and Fundamental Goal of the Project:
 
-The project serves as a comprehensive platform that integrates AI-driven smart contract generation with decentralized finance (DeFi) functionality, designed specifically for the Mantle blockchain. It offers users a wide array of tools including:
+The project serves as a comprehensive platform that integrates AI-driven smart contract generation with decentralized finance (DeFi) functionality, designed specifically for the Mantle blockchain. 
+
+It offers users a wide array of tools including:
 
 1. AI-Powered Smart Contract Generation: Users can input natural language prompts to generate various types of smart contracts (e.g., NFT contracts, Token contracts) in Solidity, which can then be edited, compiled, and deployed on Mantle.
    
@@ -25,7 +27,9 @@ The project addresses several key pain points in the Mantle blockchain and decen
 In essence, the platform aims to simplify and enhance the developer experience on Mantle while also providing a powerful toolset for DeFi interactions.
 
 
-We do not need to deploy any smart contracts for the core functionality of this project because we focus on DeFi intents. Instead of building new contracts, our platform helps users seamlessly interact with existing decentralized finance protocols such as Justlend, Sunswap, and HTX DAO. By using our interface, users can perform various DeFi actions like lending, staking, swapping, and transferring assets through the respective protocols' already-deployed contracts.
+We do not need to deploy any smart contracts for the core functionality of this project because we focus on DeFi intents.
+
+By using our interface, users can perform various DeFi actions like lending, staking, swapping, and transferring assets through the respective protocols' already-deployed contracts.
 
 ### Additional Smart Contract Features:
 Beyond DeFi interactions, our platform also supports smart contract generation, editing, and deployment. Users can:
@@ -36,18 +40,26 @@ Beyond DeFi interactions, our platform also supports smart contract generation, 
 ### Example Contracts:
 Here are some contracts generated, compiled, and deployed using our Dapp:
 - Owner Contract: An AI-generated ownership management contract that allows setting and updating the owner address, compiled and deployed using our app.
+
 - Token Swap Contract: A contract to swap tokens within the Mantle blockchain, which was generated, edited, and deployed via the app.
 
 This dual functionality of DeFi interaction and smart contract creation makes the platform a comprehensive tool for both developers and users within the Mantle ecosystem.
 
 
 ### 1. DeFi Protocol Integration:
+### 1. DeFi Protocol Integration:
 We integrated our platform with major DeFi protocols on the Mantle blockchain, such as:
-- Justlend: Users can lend assets like `stUSDT` using the existing smart contracts of the Justlend protocol.
-- Sunswap: Users can perform token swaps (e.g., swapping `sTRX` to `USDD`) on Sunswap.
-- HTX DAO & Other Protocols: Users can stake, transfer, and interact with assets such as `USDD`, `ApeNFT`, `BTT` across various other protocols on Mantle.
+- **Merchant Moe**: Users can perform operations such as:
+  - **Swap**: Users can swap different tokens on mantle.
+  - **Add Liquidity**: Users can add liquidity to the MOE-MNT pair.
+  - **Remove Liquidity**: Users can remove liquidity from the MOE-MNT pair.
+- **Pendle**: Users can engage in yield tokenization and liquidity provision.
+- **Karak**: Users can participate in various DeFi activities, including staking and trading.
+- **Agni Finance**: Users can swap MNT for USDT and add liquidity to the MNT-USDT pair.
+- **Treehouse**: Users can access unique DeFi services tailored for the Mantle ecosystem.
+- **Ondo Finance**: Users can manage their assets and participate in structured finance products.
+- **Puff Penthouse**: Users can explore exclusive DeFi opportunities and community-driven projects.
 
-By interacting with these protocols, we allow users to execute transactions on TRX/TRC-based tokens, without needing to deploy new contracts. The integration was achieved using Mantle APIs and by leveraging existing smart contracts deployed on the Mantle mainnet.
 
 ### 2. Wallet Integration:
 - We integrated MantleLink, a widely used wallet for the Mantle network, to manage users' accounts, sign transactions, and enable interaction with Mantle-based tokens (TRX, TRC-20 tokens like USDD, and more).
