@@ -12,7 +12,7 @@ import { SunSwapABI } from '../config/SunSwapABI';
 import { useActiveAccount } from 'thirdweb/react';
 import { MOE_TOKENS } from '@/config/moetokens';
 
-// Add Merchant Moe contract addresses
+// Merchant Moe contract addresses
 const MOE_CONTRACTS = {
   ROUTER: "0xeaEE7EE68874218c3558b40063c42B82D3E7232a",
   FACTORY: "0x5bef015ca9424a7c07b68490616a4c1f094bedec",
@@ -53,7 +53,7 @@ const initialQueryCommands: Command[] = [
     id: 1, 
     type: "moeSwap", 
     amount: "1", 
-    text: "Swap {amount} {token1} for {token2} on Moe",
+    text: "Swap {amount} MOE Token for MNT on Moe",
     tokenIn: MOE_CONTRACTS.MOE_TOKEN,
     tokenOut: "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8" // MNT token
   },

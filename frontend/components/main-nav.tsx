@@ -15,7 +15,7 @@ export function MainNav({ items }: MainNavProps) {
   return (
     <div className="flex gap-6 md:gap-10">
       <Link href="/" className="flex items-center space-x-2">
-        <Image height={36} width={36} src='/TronAgent.svg' alt="TronAgent" className="" />
+        <Image height={36} width={36} src='/MantleAgent.svg' alt="TronAgent" className="" />
         <span className="inline-block font-bold">{siteConfig.name}</span>
       </Link>
       {items?.length ? (
