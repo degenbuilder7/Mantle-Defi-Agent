@@ -10,17 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import JustlendABI from '../config/JustlendABI.json';
 import { SunSwapABI } from '../config/SunSwapABI';
 import { useActiveAccount } from 'thirdweb/react';
-
-// Add type definition for window.tron
-declare global {
-  interface Window {
-    tron?: {
-      tronWeb: {
-        contract: (abi: any, address: string) => Promise<any>;
-      };
-    };
-  }
-}
+import { MOE_TOKENS } from '@/config/moetokens';
 
 // Add Merchant Moe contract addresses
 const MOE_CONTRACTS = {
@@ -29,7 +19,7 @@ const MOE_CONTRACTS = {
   MOE_TOKEN: "0x4515A45337F461A11Ff0FE8aBF3c606AE5dC00c9"
 } as const;
 
-// Add Agni contract addresses
+
 const AGNI_CONTRACTS = {
   MAINNET: {
     AgniFactory: '0x25780dc8Fc3cfBD75F33bFDAB65e969b603b2035',
@@ -63,7 +53,7 @@ const initialQueryCommands: Command[] = [
     id: 1, 
     type: "moeSwap", 
     amount: "1", 
-    text: "Swap {amount} MOE for MNT",
+    text: "Swap {amount} {token1} for {token2} on Moe",
     tokenIn: MOE_CONTRACTS.MOE_TOKEN,
     tokenOut: "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8" // MNT token
   },
@@ -109,7 +99,7 @@ const initialQueryCommands: Command[] = [
   }
 ]
 
-const filterOptions = ['All', 'MOE', 'Agni', ]
+const filterOptions = ['All', 'MOE', 'Agni', 'Karak', 'pendle', 'Treehouse', 'Ondo Finance', 'Puff Penthouse']
 
 const CommandItem: React.FC<{
   command: Command;
@@ -375,99 +365,6 @@ export default function SendTransaction() {
       console.log("Error in sending txn", error);
     }
   };
-
-  const sunswapQuote = async ({
-    fromToken,
-    toToken,
-    amountIn
-  }: {
-    fromToken: string,
-    toToken: string,
-    amountIn: number
-  }) => {
-    try {
-      const res = await fetch(`https://rot.endjgfsv.link/swap/router?fromToken=${fromToken}&toToken=${toToken}&amountIn=${amountIn}&typeList=PSM,CURVE,CURVE_COMBINATION,WTRX,SUNSWAP_V1,SUNSWAP_V2,SUNSWAP_V3`, {
-        method: 'GET',
-      })
-
-      const response = await res.json()
-      console.log("Response", response);
-
-      const { data } = response
-      return data[0];
-
-    } catch (error) {
-      console.log("Error in fetching quote", error);
-
-    }
-
-  }
-
-  const handleSunSwap = async (command: Command) => {
-    const [fromToken, toToken] = command.text.match(/(\w+) to (\w+)/i)?.slice(1) || [];
-    if (!fromToken || !toToken) {
-      console.error("Invalid swap command format");
-      return;
-    }
-
-    const fromTokenAddress = getTokenAddress(fromToken);
-    const toTokenAddress = getTokenAddress(toToken);
-    const amountIn = parseInt(command.amount) * 1e6; // Assuming 6 decimal places, adjust if needed
-
-    const amountOutResponse = await sunswapQuote({
-      fromToken: fromTokenAddress,
-      toToken: toTokenAddress,
-      amountIn
-    })
-
-    const tron = window.tron;
-
-    try {
-      if (tron) {
-        const tronweb = tron.tronWeb;
-        console.log("Amount Out >>>", amountOutResponse);
-        let contract = await tronweb.contract(SunSwapABI, 'TJ4NNy8xZEqsowCBhLvZ45LCqPdGjkET5j')
-        console.log("Contract", contract);
-
-        const { tokens, poolFees, poolVersions } = amountOutResponse
-
-        const date = new Date();
-        date.setHours(date.getHours() + 3);
-        const timestamp = date.getTime();
-        console.log(timestamp);
-
-        const tx = await contract.swapExactInput(
-          tokens,
-          poolVersions,
-          [poolVersions.length],
-          poolFees,
-          [amountIn, '1', address, timestamp]
-        ).send({ feeLimit: 10000 * 1e6, shouldPollResponse: true });
-
-        console.log("Tx", tx);
-      }
-    } catch (error) {
-      console.log("Error in the swapping contract", error);
-    }
-  }
-
-  // Helper function to get token addresses (you'll need to implement this)
-  const getTokenAddress = (tokenSymbol: string): string => {
-    // Implement a mapping of token symbols to their addresses
-    const tokenAddresses: { [key: string]: string } = {
-      'sTRX': 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb',
-      'USDD': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-      'USDT': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-      'APENFT': 'TFczxzPhnThNSqr5by8tvxsdCFRRz6cPNq',
-      'SUN': 'TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S',
-      'BTC': 'TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9',
-      'WTRX': 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR',
-      'WETH': 'TXWkP3jLBqRGojUih1ShzNyDaN5Csnebok',
-      'HTX': 'TUPM7K8REVzD2UdV4R5fe5M8XbnR2DdoJ6',
-      // Add more token mappings as needed
-    };
-    return tokenAddresses[tokenSymbol] || '';
-  }
 
   return (
     <div className="flex flex-col h-full">
