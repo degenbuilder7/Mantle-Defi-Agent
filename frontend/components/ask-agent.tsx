@@ -26,7 +26,7 @@ export default function AskAgent() {
           'Content-Type': 'application/json',
           'x-brian-api-key': process.env.NEXT_PUBLIC_BRIAN_API_KEY || '',
         },
-        body: JSON.stringify({ prompt: input }),
+        body: JSON.stringify({ prompt: input  , kb: "mantle_kb"}),
       })
 
       if (!response.ok) throw new Error('Failed to fetch response')
